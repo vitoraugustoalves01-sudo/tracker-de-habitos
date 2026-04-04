@@ -143,7 +143,7 @@
         <div class="card">
           <div class="field"><label class="field-label">Sono (h)</label><input type="number" id="inp-sleep" step="0.5" min="0" max="24" placeholder="7.5"></div>
           <div class="field"><label class="field-label">Água (L)</label><input type="number" id="inp-water" step="0.5" min="0" placeholder="3.5"></div>
-          <div class="field"><label class="field-label">Peso (kg)</label><input type="number" id="inp-weight" step="0.1" min="40" placeholder="86.0"></div>
+          <div class="field"><label class="field-label">Peso (kg)</label><input type="number" id="inp-weight" step="0.1" min="40" placeholder="86.0"><button id="btn-no-weight" onclick="toggleNoWeight()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 8px;cursor:pointer;white-space:nowrap;margin-left:4px">não me pesei</button></div>
         </div>
       </div>
 
@@ -159,7 +159,13 @@
             <div class="stars" id="stars-mood"></div>
           </div>
           <div class="field" style="flex-direction:column;align-items:flex-start;gap:8px">
-            <span class="field-label" style="flex:none">Trabalho</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+              <span class="field-label" style="flex:none">Trabalho</span>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
+                <input type="checkbox" id="chk-no-work" onchange="toggleNoWork()" style="width:14px;height:14px;cursor:pointer">
+                dia sem trabalho
+              </label>
+            </div>
             <div class="stars" id="stars-work"></div>
           </div>
         </div>
@@ -218,16 +224,7 @@
       <div id="history-list"></div>
     </div>
 
-    <!-- TAB: ANÁLISE -->
-    <div class="tab" id="tab-analysis">
-      <div class="section">
-        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Envia os últimos 30 dias para análise de padrões e correlações.</p>
-        <button id="analyze-btn" class="nav-item" style="width:100%;background:var(--accent);border-radius:var(--radius);color:#fff;font-size:15px;font-weight:600;padding:15px;cursor:pointer;border:none;flex-direction:row;gap:8px" onclick="runAnalysis()">
-          Analisar com IA
-        </button>
-      </div>
-      <div id="analysis-output" style="margin-top:12px"></div>
-    </div>
+
 
   </div>
 
@@ -240,10 +237,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       Histórico
     </button>
-    <button class="nav-item" onclick="showTab('analysis',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      Análise
-    </button>
+
   </nav>
 </div>
 
@@ -344,7 +338,7 @@ function showTab(name, btn) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (btn) btn.classList.add('active');
-  const titles = { input:'Registro do dia', history:'Histórico', analysis:'Análise IA' };
+  const titles = { input:'Registro do dia', history:'Histórico' };
   document.getElementById('header-title').textContent = titles[name];
   if (name === 'history') loadHistory();
 }
@@ -402,7 +396,7 @@ async function saveDay() {
     document.getElementById('inp-weight').value || '',
     state.energy || '',
     state.mood || '',
-    state.work || '',
+    state.noWork ? 'folga' : (state.work || ''),
     state.exercises.map(e => `${e.type}(${e.duration}min${e.detail?' - '+e.detail:''})`).join(' | '),
     document.getElementById('inp-breakfast').value,
     document.getElementById('inp-lunch').value,
@@ -444,7 +438,7 @@ function showMsg(text, type) {
 }
 
 function resetForm() {
-  state.energy = 0; state.mood = 0; state.work = 0;
+  state.energy = 0; state.mood = 0; state.work = 0; state.noWeight = false; state.noWork = false;
   state.exercises = [];
   renderExercises();
   renderStars('stars-energy', 0); renderStars('stars-mood', 0); renderStars('stars-work', 0);
@@ -452,8 +446,14 @@ function resetForm() {
   document.querySelectorAll('#supps-chips .chip').forEach(c => c.classList.remove('on'));
   ['inp-sleep','inp-water','inp-weight','inp-breakfast','inp-lunch','inp-dinner','inp-snacks','inp-reading-min','inp-reading-title','inp-notes'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.value = '';
+    if (el) { el.value = ''; el.disabled = false; }
   });
+  document.getElementById('inp-weight').placeholder = '86.0';
+  document.getElementById('btn-no-weight').style.borderColor = '';
+  document.getElementById('btn-no-weight').style.color = '';
+  document.getElementById('chk-no-work').checked = false;
+  document.getElementById('stars-work').style.opacity = '';
+  document.getElementById('stars-work').style.pointerEvents = '';
   setTodayDate();
 }
 
@@ -515,57 +515,35 @@ async function loadHistory() {
   }
 }
 
-// ── ANALYSIS ──
-async function runAnalysis() {
-  const btn = document.getElementById('analyze-btn');
-  const out = document.getElementById('analysis-output');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Analisando...';
-  out.innerHTML = '';
-
-  try {
-    const token = await getAccessToken();
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${SHEET_NAME}!A:Q`,
-      { headers: { 'Authorization': `Bearer ${token}` } }
-    );
-    const data = await res.json();
-    const headers = data.values[0];
-    const rows = data.values.slice(1).slice(-30);
-    const entries = rows.map(r => Object.fromEntries(headers.map((h,i) => [h, r[i]||''])));
-
-    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `Você é um coach de performance pessoal analisando dados de hábitos de Vitor, 25 anos, 86kg, faz boxe 3x/semana, objetivo de cutting.
-
-Analise os dados abaixo e entregue:
-1. Padrões identificados (positivos e negativos)
-2. Correlações relevantes (sono × energia, FDS × alimentação, etc)
-3. 3 pontos de atenção prioritários
-4. 2 recomendações concretas e acionáveis
-
-Seja direto. Zero clichê motivacional. Se algo estiver ruim, fala sem rodeios.
-
-Dados (últimos ${entries.length} dias):
-${JSON.stringify(entries, null, 2)}`
-        }]
-      })
-    });
-    const aiData = await aiRes.json();
-    const text = aiData.content.map(c => c.text||'').join('');
-    out.innerHTML = `<div class="analysis-output">${text}</div>`;
-  } catch(e) {
-    out.innerHTML = `<div class="analysis-output" style="color:var(--danger)">Erro: ${e.message}</div>`;
+// ── TOGGLE PESO / TRABALHO ──
+function toggleNoWeight() {
+  const inp = document.getElementById('inp-weight');
+  const btn = document.getElementById('btn-no-weight');
+  const noWeight = inp.disabled;
+  if (noWeight) {
+    inp.disabled = false;
+    inp.value = '';
+    inp.placeholder = '86.0';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    state.noWeight = false;
+  } else {
+    inp.disabled = true;
+    inp.value = '';
+    inp.placeholder = 'não pesado';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    state.noWeight = true;
   }
+}
 
-  btn.disabled = false;
-  btn.innerHTML = 'Analisar com IA';
+function toggleNoWork() {
+  const chk = document.getElementById('chk-no-work');
+  const stars = document.getElementById('stars-work');
+  state.noWork = chk.checked;
+  stars.style.opacity = chk.checked ? '0.3' : '1';
+  stars.style.pointerEvents = chk.checked ? 'none' : '';
+  if (chk.checked) { state.work = 0; renderStars('stars-work', 0); }
 }
 </script>
 </body>
