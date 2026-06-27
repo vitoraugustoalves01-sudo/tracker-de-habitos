@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/vitor/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/5269217a-0859-4055-8766-ed6ca1f25dcd/fdd84769-c2e4-412d-93d7-c81f3b76fea6/skills/xlsx/**)",
+      "Bash(python -c \"import pandas as pd; x=pd.read_excel\\(r'C:\\\\Users\\\\vitor\\\\Downloads\\\\Habit Tracker.xlsx', sheet_name=None\\); [print\\('SHEET:',k,'\\\\n',v.to_string\\(\\),'\\\\n'\\) for k,v in x.items\\(\\)]\")",
+      "Bash(where python3 *)",
+      "Bash(py --version)",
+      "Bash(py -3 --version)",
+      "Bash(ls /c/Python*/python.exe)",
+      "Read(//c/Users/vitor/AppData/Local/Programs/**)",
+      "Read(//c/Users/vitor/Downloads/**)",
+      "Bash(mkdir -p _xlsx_tmp)",
+      "Bash(unzip -o \"Habit Tracker.xlsx\" -d _xlsx_tmp)"
+    ]
+  }
+}
