@@ -56,10 +56,10 @@
 
   .supp-btn { border: none; cursor: pointer; font: inherit; appearance: none; }
 
-  #field-status-badge { position: fixed; font-size: 11px; padding: 4px 9px; border-radius: calc(var(--radius-md) * 0.75); pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 999; white-space: nowrap; background: var(--color-neutral-100); color: var(--color-neutral-800); }
-  #field-status-badge.show { opacity: 1; }
-  #field-status-badge.ok { background: var(--color-accent-100); color: var(--color-accent-800); }
-  #field-status-badge.err { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+  #upload-wrap { position: sticky; bottom: 0; background: var(--color-bg); padding-top: 10px; margin-top: -8px; }
+  #upload-msg { text-align: center; font-size: 12px; margin-top: 6px; min-height: 16px; }
+  #upload-msg.ok { color: var(--color-accent-700); }
+  #upload-msg.err { color: var(--color-accent-2-700); }
 
   .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 30px; }
   .metric-val { font-family: var(--font-heading); font-weight: 600; font-size: 30px; color: var(--color-text); }
@@ -159,6 +159,11 @@
         <textarea class="input" id="inp-notes" rows="3" placeholder="qualquer coisa relevante do dia..."></textarea>
       </div>
 
+      <div id="upload-wrap">
+        <button type="button" class="btn btn-primary btn-block" id="upload-btn" onclick="uploadDay()">Upload</button>
+        <div id="upload-msg"></div>
+      </div>
+
     </div>
 
     <!-- TAB: HISTÓRICO -->
@@ -187,7 +192,7 @@ const suppChipEls = {};
 document.addEventListener('DOMContentLoaded', () => {
   buildSupps();
   updateHeaderDate();
-  wireLiveSave();
+  wireStatusUpdates();
   updateStatusCard();
   loadToday();
 });
@@ -228,7 +233,6 @@ function buildSupps() {
     el.onclick = () => {
       state.supps[s] = !state.supps[s];
       el.className = (state.supps[s] ? 'tag tag-accent' : 'tag tag-neutral') + ' supp-btn';
-      saveNow('supps', { supps: Object.keys(state.supps).filter(k => state.supps[k]).join(', ') }, el);
       updateStatusCard();
     };
     suppChipEls[s] = el;
@@ -247,11 +251,10 @@ function calcPace(km, min) {
 }
 
 // ── TOGGLE MÚSCULO ──
-function toggleMuscle(i, muscle, checked, el) {
+function toggleMuscle(i, muscle, checked) {
   const arr = state.exercises[i].muscles;
   if (checked && !arr.includes(muscle)) arr.push(muscle);
   if (!checked) state.exercises[i].muscles = arr.filter(m => m !== muscle);
-  saveExercises(el);
 }
 
 // ── EXERCISES ──
@@ -273,21 +276,13 @@ function serializeExercises() {
     return `${type}(${e.duration}min${e.detail?' - '+e.detail:''})`;
   }).join(' | ');
 }
-// Salva a versão legível (exercises) e a estruturada (exercises_json) juntas
-// — a JSON é o que permite reconstruir a UI ao recarregar a página, sem
-// precisar parsear a string formatada de volta.
-function saveExercises(el) {
-  saveNow('exercises', { exercises: serializeExercises(), exercises_json: JSON.stringify(state.exercises) }, el);
-}
 function addExercise() {
   state.exercises.push({ type: '', duration: '', detail: '', km: '', runMin: '', muscles: [] });
   renderExercises();
-  saveExercises(document.getElementById('exercise-list'));
 }
 function removeExercise(i) {
   state.exercises.splice(i, 1);
   renderExercises();
-  saveExercises(document.getElementById('exercise-list'));
 }
 function renderExercises() {
   const c = document.getElementById('exercise-list');
@@ -302,7 +297,7 @@ function renderExercises() {
     let html = `
       <div class="exercise-header">
         <input class="input" type="text" list="ex-types-list" placeholder="tipo de exercício (ex: Corrida, Musculação...)" value="${type}"
-          onchange="state.exercises[${i}].type=this.value;renderExercises();saveExercises(document.getElementById('exercise-list'));" style="flex:1">
+          onchange="state.exercises[${i}].type=this.value;renderExercises();" style="flex:1">
         <button class="remove-btn" aria-label="Remover exercício" onclick="removeExercise(${i})">×</button>
       </div>`;
 
@@ -311,10 +306,10 @@ function renderExercises() {
       html += `
         <div class="exercise-fields">
           <input class="input" type="text" inputmode="decimal" placeholder="km" value="${ex.km}"
-            onchange="state.exercises[${i}].km=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveExercises(this);"
+            onchange="state.exercises[${i}].km=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':'';"
             style="width:84px">
           <input class="input" type="text" inputmode="decimal" placeholder="min" value="${ex.runMin}"
-            onchange="state.exercises[${i}].runMin=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveExercises(this);"
+            onchange="state.exercises[${i}].runMin=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':'';"
             style="width:84px">
           <span class="pace-display">${pace ? 'Pace: '+pace+'/km' : ''}</span>
         </div>`;
@@ -322,7 +317,7 @@ function renderExercises() {
       const checkboxes = MUSCLES.map(m => `
         <label class="muscle-label">
           <input type="checkbox" value="${m}" ${ex.muscles.includes(m)?'checked':''}
-            onchange="toggleMuscle(${i},'${m}',this.checked,this)">
+            onchange="toggleMuscle(${i},'${m}',this.checked)">
           ${m}
         </label>`).join('');
       html += `<div class="muscle-grid">${checkboxes}</div>`;
@@ -330,9 +325,9 @@ function renderExercises() {
       html += `
         <div class="exercise-fields">
           <input class="input" type="text" inputmode="decimal" placeholder="minutos" value="${ex.duration}"
-            onchange="state.exercises[${i}].duration=normDec(this.value); saveExercises(this);" style="width:100px">
+            onchange="state.exercises[${i}].duration=normDec(this.value);" style="width:100px">
           <input class="input" type="text" placeholder="detalhes (opcional)" value="${ex.detail}"
-            onchange="state.exercises[${i}].detail=this.value; saveExercises(this);" style="flex:1">
+            onchange="state.exercises[${i}].detail=this.value;" style="flex:1">
         </div>`;
     }
 
@@ -377,28 +372,37 @@ function showTab(name, btn) {
   if (name === 'history') loadHistory();
 }
 
-// ── SALVAMENTO AO VIVO ──
-// Cada campo dispara seu próprio upsert parcial no Apps Script (só o
-// campo alterado, nunca o formulário inteiro). Campos de digitação livre
-// usam debounce curto; controles de clique (chips/checkbox/datalist input)
-// salvam na hora, já que o evento em si já marca "parei de mexer".
-const pendingTimers = {};
+// ── UPLOAD ──
+// Um único botão envia o dia inteiro numa tacada só (upsert por data no
+// Apps Script — sobrescreve só as colunas enviadas, que aqui é sempre o
+// conjunto inteiro de campos conhecidos). Substitui o salvamento por
+// campo de antes: digitar/marcar coisas só atualiza o estado local (pra
+// o card de status e a UI reagirem na hora) até o Upload ser clicado.
+async function uploadDay() {
+  const btn = document.getElementById('upload-btn');
+  const msg = document.getElementById('upload-msg');
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+  msg.textContent = '';
+  msg.className = '';
 
-// timerKey só serve pra coalescer/cancelar debounces concorrentes do mesmo
-// campo — os fields de fato enviados vêm inteiros de getFields()/fields
-// (pode ser mais de uma coluna por chamada, ex: exercises + exercises_json).
-function scheduleSave(timerKey, getFields, el) {
-  clearTimeout(pendingTimers[timerKey]);
-  pendingTimers[timerKey] = setTimeout(() => doSave(getFields(), el), 800);
-}
+  const fields = {
+    sleep: normDec(document.getElementById('inp-sleep').value),
+    water: normDec(document.getElementById('inp-water').value),
+    weight: document.getElementById('inp-weight').disabled ? '' : normDec(document.getElementById('inp-weight').value),
+    gordura: normDec(document.getElementById('inp-gordura').value),
+    exercises: serializeExercises(),
+    exercises_json: JSON.stringify(state.exercises),
+    breakfast: mealVal('inp-breakfast', 'inp-breakfast-obs'),
+    lunch: mealVal('inp-lunch', 'inp-lunch-obs'),
+    pretreino: mealVal('inp-pretreino', 'inp-pretreino-obs'),
+    dinner: mealVal('inp-dinner', 'inp-dinner-obs'),
+    ceia: mealVal('inp-ceia', 'inp-ceia-obs'),
+    meals_json: JSON.stringify(mealsSnapshot()),
+    supps: Object.keys(state.supps).filter(k => state.supps[k]).join(', '),
+    notes: document.getElementById('inp-notes').value,
+  };
 
-function saveNow(timerKey, fields, el) {
-  clearTimeout(pendingTimers[timerKey]);
-  doSave(fields, el);
-}
-
-async function doSave(fields, el) {
-  showFieldStatus(el, 'saving', 'salvando…');
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -408,66 +412,28 @@ async function doSave(fields, el) {
       body: JSON.stringify({ date: todayISO(), ...fields })
     });
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'falha ao salvar');
-    showFieldStatus(el, 'ok', '✓ salvo');
+    if (!data.ok) throw new Error(data.error || 'falha ao enviar');
+    msg.textContent = '✓ Enviado';
+    msg.className = 'ok';
   } catch (e) {
-    showFieldStatus(el, 'err', 'erro ao salvar');
+    msg.textContent = 'Erro: ' + e.message;
+    msg.className = 'err';
   }
-  updateStatusCard();
+
+  btn.disabled = false;
+  btn.textContent = 'Upload';
 }
 
-function showFieldStatus(el, kind, text) {
-  if (!el) return;
-  let badge = document.getElementById('field-status-badge');
-  if (!badge) {
-    badge = document.createElement('div');
-    badge.id = 'field-status-badge';
-    document.body.appendChild(badge);
-  }
-  const rect = el.getBoundingClientRect();
-  badge.style.top = Math.max(8, rect.top - 26) + 'px';
-  badge.style.left = Math.min(window.innerWidth - 90, Math.max(8, rect.right - 80)) + 'px';
-  badge.textContent = text;
-  badge.className = 'show' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
-  clearTimeout(badge._hideTimer);
-  if (kind !== 'saving') {
-    badge._hideTimer = setTimeout(() => badge.classList.remove('show'), 1400);
-  }
-}
-
-function wireLiveSave() {
-  const decimalKeys = { 'inp-sleep':'sleep', 'inp-water':'water', 'inp-weight':'weight', 'inp-gordura':'gordura' };
-  Object.keys(decimalKeys).forEach(id => {
-    const el = document.getElementById(id);
-    const key = decimalKeys[id];
-    el.addEventListener('input', () => {
-      scheduleSave(key, () => ({ [key]: normDec(el.value) }), el);
-      updateStatusCard();
-    });
-  });
-
-  const meals = [
-    ['breakfast', 'inp-breakfast', 'inp-breakfast-obs'],
-    ['lunch', 'inp-lunch', 'inp-lunch-obs'],
-    ['pretreino', 'inp-pretreino', 'inp-pretreino-obs'],
-    ['dinner', 'inp-dinner', 'inp-dinner-obs'],
-    ['ceia', 'inp-ceia', 'inp-ceia-obs'],
-  ];
-  meals.forEach(([key, mealId, obsId]) => {
-    const mealEl = document.getElementById(mealId);
-    const obsEl = document.getElementById(obsId);
-    const handler = (el) => {
-      scheduleSave(key, () => ({ [key]: mealVal(mealId, obsId), meals_json: JSON.stringify(mealsSnapshot()) }), el);
-      updateStatusCard();
-    };
-    mealEl.addEventListener('input', () => handler(mealEl));
-    obsEl.addEventListener('input', () => handler(obsEl));
-  });
-
-  const notesEl = document.getElementById('inp-notes');
-  notesEl.addEventListener('input', () => {
-    scheduleSave('notes', () => ({ notes: notesEl.value }), notesEl);
-    updateStatusCard();
+// Mantém o card de status reagindo enquanto o usuário digita, sem
+// disparar nenhuma chamada de rede — isso só acontece no Upload.
+function wireStatusUpdates() {
+  [
+    'inp-sleep', 'inp-water', 'inp-weight', 'inp-gordura',
+    'inp-breakfast', 'inp-breakfast-obs', 'inp-lunch', 'inp-lunch-obs',
+    'inp-pretreino', 'inp-pretreino-obs', 'inp-dinner', 'inp-dinner-obs',
+    'inp-ceia', 'inp-ceia-obs', 'inp-notes'
+  ].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateStatusCard);
   });
 }
 
@@ -640,7 +606,6 @@ function toggleNoWeight() {
     inp.value = '';
     inp.placeholder = 'não pesado';
     btn.textContent = 'registrar peso';
-    saveNow('weight', { weight: '' }, btn);
   }
   updateStatusCard();
 }
