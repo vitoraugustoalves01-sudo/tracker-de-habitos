@@ -8,10 +8,15 @@ if (!fs.existsSync(dist)) fs.mkdirSync(dist, { recursive: true });
 
 fs.readdirSync(src).forEach(f => fs.copyFileSync(path.join(src, f), path.join(dist, f)));
 
-// Ícone SVG
+// Ícone SVG — monograma serifado com barra em ciano e marca de registro em
+// magenta, sobre o fundo papel do design system (Broadsheet).
 const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#0d0d0d"/>
-  <text x="96" y="125" font-size="100" text-anchor="middle" font-family="sans-serif" fill="#2563eb">H</text>
+  <rect width="192" height="192" rx="40" fill="#f3f2f2"/>
+  <g transform="translate(26,16) scale(3.5)">
+    <text x="1" y="38" font-family="'Source Serif 4', Georgia, serif" font-weight="600" font-size="42" fill="#201e1d">H</text>
+    <rect x="6" y="19" width="27" height="5" fill="#0088b0"/>
+    <circle cx="34.5" cy="40.5" r="2.5" fill="#d6006c"/>
+  </g>
 </svg>`;
 fs.writeFileSync(path.join(dist, 'icon.svg'), icon);
 

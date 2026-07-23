@@ -2,126 +2,91 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Tracker">
-<meta name="theme-color" content="#0d0d0d">
+<meta name="theme-color" content="#f3f2f2">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
 <title>Habit Tracker</title>
 <style>
-  :root {
-    --bg: #0d0d0d;
-    --surface: #161616;
-    --surface2: #1e1e1e;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.15);
-    --text: #f0ece4;
-    --text2: #888;
-    --text3: #555;
-    --accent: #2563eb;
-    --accent-light: rgba(37,99,235,0.15);
-    --success: #16a34a;
-    --danger: #dc2626;
-    --radius: 10px;
-    --radius-sm: 6px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; overscroll-behavior: none; }
-
-  /* LAYOUT */
+  /* Layout específico da página — tudo que não é um componente genérico
+     do design system (cores/tipografia/espaçamento vêm de styles.css). */
+  html, body { height: 100%; overscroll-behavior: none; }
   #app { display: flex; flex-direction: column; height: 100%; max-width: 480px; margin: 0 auto; }
-  #header { padding: 16px 20px 8px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
-  #header h1 { font-size: 17px; font-weight: 600; }
-  #header .date { font-size: 12px; color: var(--text2); margin-top: 2px; }
-  #content { flex: 1; overflow-y: auto; padding: 16px 20px 100px; }
-  #bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--surface); border-top: 0.5px solid var(--border); display: flex; padding-bottom: env(safe-area-inset-bottom); }
-  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 0; font-size: 11px; color: var(--text3); cursor: pointer; gap: 3px; border: none; background: none; }
-  .nav-item.active { color: var(--accent); }
-  .nav-item svg { width: 22px; height: 22px; }
 
-  /* TABS */
+  #header { flex-shrink: 0; padding: var(--space-4) var(--space-4) 0; }
+  #header .rule { height: 3px; background: var(--color-text); }
+  #header .head-row { display: flex; align-items: baseline; justify-content: space-between; padding: 9px 0 8px; }
+  #header .brand { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 14px; letter-spacing: .07em; text-transform: uppercase; }
+  #header .date { font-size: 11px; font-style: italic; color: var(--color-neutral-700); }
+  #header .div { height: 1px; background: var(--color-divider); }
+  #tabs { display: flex; gap: var(--space-6); padding-top: 11px; }
+  .tab-btn { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 14px; cursor: pointer; background: none; border: none; padding: 0 0 8px; border-bottom: 2px solid transparent; color: var(--color-neutral-600); }
+  .tab-btn.active { color: var(--color-accent-700); border-bottom-color: var(--color-accent); }
+
+  #status-row { flex-shrink: 0; padding: var(--space-3) var(--space-4) 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  #status-summary { font-size: 11px; color: var(--color-neutral-700); margin-right: 2px; }
+
+  #content { flex: 1; overflow-y: auto; padding: var(--space-4) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
+  #content::-webkit-scrollbar { display: none; }
+
   .tab { display: none; }
   .tab.active { display: block; }
 
-  /* SECTIONS */
-  .section { margin-bottom: 20px; }
-  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text2); margin-bottom: 8px; }
-  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .field { display: flex; align-items: center; padding: 12px 14px; border-bottom: 0.5px solid var(--border); gap: 12px; }
-  .field:last-child { border-bottom: none; }
-  .field-label { font-size: 13px; color: var(--text2); flex: 0 0 100px; }
-  .field input[type=text] {
-    flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 15px; text-align: right; width: 100%;
-  }
-  .field input::placeholder { color: var(--text3); }
-  .field textarea { flex: 1; background: none; border: none; outline: none; color: var(--text); font-size: 14px; resize: none; width: 100%; line-height: 1.5; }
+  .section { margin-bottom: 28px; }
+  .section-title { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--color-accent-700); font-weight: 600; margin-bottom: 12px; }
 
-  /* CHIPS */
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 14px; }
-  .chip { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 0.5px solid var(--border2); background: transparent; cursor: pointer; color: var(--text2); transition: all .15s; }
-  .chip.on { background: var(--accent-light); border-color: var(--accent); color: var(--text); }
-  .badge-weekly { font-size: 9px; color: var(--text3); margin-left: 4px; }
+  .body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-  /* EXERCISE */
-  .exercise-item { padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
-  .exercise-item:last-child { border-bottom: none; }
-  .exercise-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .exercise-type-select { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); font-size: 14px; padding: 5px 8px; }
-  .remove-btn { background: none; border: none; color: var(--text3); font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px; }
-  .exercise-fields { display: flex; gap: 8px; align-items: center; }
-  .exercise-fields input { flex: 1; background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 13px; padding: 7px 10px; }
-  .add-ex-btn { display: flex; align-items: center; gap: 6px; padding: 12px 14px; font-size: 13px; color: var(--accent); background: none; border: none; cursor: pointer; width: 100%; }
-  .muscle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-top: 8px; }
-  .muscle-label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text2); cursor: pointer; }
-  .muscle-label input { width: 13px; height: 13px; cursor: pointer; accent-color: var(--accent); }
-  .pace-display { font-size: 12px; color: var(--text2); flex: 1; text-align: right; }
+  .exercise-item { margin-bottom: 10px; gap: 10px; }
+  .exercise-header { display: flex; gap: 8px; align-items: center; }
+  .remove-btn { border: none; background: none; cursor: pointer; color: var(--color-neutral-600); font-size: 20px; line-height: 1; padding: 2px 4px; }
+  .exercise-fields { display: flex; gap: 10px; align-items: center; }
+  .pace-display { font-size: 12px; color: var(--color-neutral-700); }
+  .muscle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .muscle-label { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--color-neutral-800); cursor: pointer; }
+  .muscle-label input { accent-color: var(--color-accent); width: 14px; height: 14px; cursor: pointer; }
 
-  /* TEXTAREA BLOCK */
-  .textarea-block { padding: 10px 14px; }
-  .textarea-block label { font-size: 11px; color: var(--text2); display: block; margin-bottom: 4px; }
-  .textarea-block textarea { width: 100%; background: none; border: none; outline: none; color: var(--text); font-size: 14px; resize: none; line-height: 1.5; }
-  .meal-obs { width: 100%; background: none; border: none; outline: none; color: var(--text3); font-size: 12px; padding: 2px 0 4px; display: block; }
-  .meal-obs::placeholder { color: var(--text3); }
+  .meal-block + .meal-block { margin-top: 16px; }
+  .meal-block label { display: block; font-size: 12px; color: var(--color-neutral-700); margin-bottom: 5px; }
+  .meal-obs { margin-top: 6px; font-size: 12px; min-height: 30px; }
 
-  /* FIELD SAVE STATUS (badge flutuante, mostrado perto do campo editado) */
-  #field-status-badge { position: fixed; font-size: 11px; padding: 4px 9px; border-radius: 20px; background: var(--surface2); border: 0.5px solid var(--border2); color: var(--text2); pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 999; white-space: nowrap; }
+  .supp-btn { border: none; cursor: pointer; font: inherit; appearance: none; }
+
+  #field-status-badge { position: fixed; font-size: 11px; padding: 4px 9px; border-radius: calc(var(--radius-md) * 0.75); pointer-events: none; opacity: 0; transition: opacity .2s; z-index: 999; white-space: nowrap; background: var(--color-neutral-100); color: var(--color-neutral-800); }
   #field-status-badge.show { opacity: 1; }
-  #field-status-badge.ok { color: var(--success); border-color: var(--success); }
-  #field-status-badge.err { color: var(--danger); border-color: var(--danger); }
+  #field-status-badge.ok { background: var(--color-accent-100); color: var(--color-accent-800); }
+  #field-status-badge.err { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
 
-  /* HISTORY */
-  .day-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
-  .day-card-date { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-  .day-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .day-stat { font-size: 12px; color: var(--text2); }
-  .day-stat span { color: var(--text); font-weight: 500; }
-  .badge { display: inline-flex; align-items: center; font-size: 11px; padding: 3px 8px; border-radius: 10px; margin: 2px; }
-  .badge-blue { background: var(--accent-light); color: #60a5fa; }
-  .badge-green { background: rgba(22,163,74,.15); color: #4ade80; }
-  .badges-row { margin-top: 8px; }
-  .empty-state { text-align: center; color: var(--text2); font-size: 14px; padding: 40px 0; }
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-bottom: 30px; }
+  .metric-val { font-family: var(--font-heading); font-weight: 600; font-size: 30px; color: var(--color-text); }
+  .metric-lbl { font-size: 11px; color: var(--color-neutral-700); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
 
-  /* METRICS */
-  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-  .metric-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
-  .metric-val { font-size: 26px; font-weight: 600; }
-  .metric-lbl { font-size: 11px; color: var(--text2); margin-top: 3px; }
-
-  /* SPINNER */
-  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ANALYSIS */
-  .analysis-output { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: var(--text); min-height: 80px; }
+  .day-card-stats { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--color-neutral-800); }
+  .empty-state { text-align: center; color: var(--color-neutral-700); font-size: 14px; padding: 40px 0; }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="header">
-    <h1 id="header-title">Registro do dia</h1>
-    <div class="date" id="header-date"></div>
+    <div class="rule"></div>
+    <div class="head-row">
+      <div class="brand">Habit Tracker</div>
+      <div class="date" id="header-date"></div>
+    </div>
+    <div class="div"></div>
+    <div id="tabs">
+      <button class="tab-btn active" id="tab-btn-input" onclick="showTab('input',this)">Registro</button>
+      <button class="tab-btn" id="tab-btn-history" onclick="showTab('history',this)">Histórico</button>
+    </div>
+  </div>
+
+  <div id="status-row">
+    <span id="status-summary"></span>
+    <span id="status-chips" style="display:contents"></span>
   </div>
 
   <div id="content">
@@ -130,97 +95,80 @@
     <div class="tab active" id="tab-input">
 
       <div class="section">
-        <div class="section-title">Status de hoje</div>
-        <div class="card">
-          <div class="chips" id="status-chips"></div>
-        </div>
-      </div>
-
-      <div class="section">
         <div class="section-title">Corpo</div>
-        <div class="card">
-          <div class="field"><label class="field-label">Sono (h)</label><input type="text" inputmode="decimal" id="inp-sleep" placeholder="7.5"></div>
-          <div class="field"><label class="field-label">Água (L)</label><input type="text" inputmode="decimal" id="inp-water" placeholder="3.5"></div>
-          <div class="field"><label class="field-label">Peso (kg)</label><input type="text" inputmode="decimal" id="inp-weight" placeholder="86.0"><button id="btn-no-weight" onclick="toggleNoWeight()" style="background:none;border:0.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text2);font-size:11px;padding:4px 8px;cursor:pointer;white-space:nowrap;margin-left:4px">não me pesei</button></div>
-          <div class="field"><label class="field-label">Gordura (%)</label><input type="text" inputmode="decimal" id="inp-gordura" placeholder="15.0"></div>
+        <div class="body-grid">
+          <div class="field"><label>Sono (h)</label><input class="input" type="text" inputmode="decimal" id="inp-sleep" placeholder="7.5"></div>
+          <div class="field"><label>Água (L)</label><input class="input" type="text" inputmode="decimal" id="inp-water" placeholder="3.5"></div>
+          <div class="field"><label>Peso (kg)</label><input class="input" type="text" inputmode="decimal" id="inp-weight" placeholder="86.0"></div>
+          <div class="field"><label>Gordura (%)</label><input class="input" type="text" inputmode="decimal" id="inp-gordura" placeholder="15.0"></div>
         </div>
+        <button type="button" class="btn btn-ghost" id="btn-no-weight" onclick="toggleNoWeight()" style="margin-top:8px;font-size:11px;padding:4px 6px">não me pesei hoje</button>
       </div>
 
       <div class="section">
         <div class="section-title">Exercícios</div>
-        <div class="card">
-          <div id="exercise-list"></div>
-          <button class="add-ex-btn" onclick="addExercise()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Adicionar exercício
-          </button>
-        </div>
+        <div id="exercise-list"></div>
+        <button type="button" class="btn btn-secondary btn-block" onclick="addExercise()">+ Adicionar exercício</button>
+        <datalist id="ex-types-list">
+          <option value="Corrida"></option>
+          <option value="Musculação"></option>
+          <option value="Funcional"></option>
+          <option value="Yoga"></option>
+          <option value="Natação"></option>
+          <option value="Ciclismo"></option>
+          <option value="Boxe"></option>
+        </datalist>
       </div>
 
       <div class="section">
         <div class="section-title">Alimentação</div>
-        <div class="card">
-          <div class="textarea-block">
-            <label>Café da manhã</label>
-            <textarea id="inp-breakfast" rows="2" placeholder="ex: 3 ovos mexidos, pão francês, Monster Zero"></textarea>
-            <input type="text" id="inp-breakfast-obs" class="meal-obs" placeholder="observação (opcional)...">
-          </div>
-          <div style="border-top:0.5px solid var(--border)" class="textarea-block">
-            <label>Almoço</label>
-            <textarea id="inp-lunch" rows="2" placeholder="ex: marmita light, frango, legumes"></textarea>
-            <input type="text" id="inp-lunch-obs" class="meal-obs" placeholder="observação (opcional)...">
-          </div>
-          <div style="border-top:0.5px solid var(--border)" class="textarea-block">
-            <label>Pré-treino</label>
-            <textarea id="inp-pretreino" rows="2" placeholder="ex: banana, whey, café"></textarea>
-            <input type="text" id="inp-pretreino-obs" class="meal-obs" placeholder="observação (opcional)...">
-          </div>
-          <div style="border-top:0.5px solid var(--border)" class="textarea-block">
-            <label>Jantar</label>
-            <textarea id="inp-dinner" rows="2" placeholder="ex: 150g patinho, brócolis, mandioquinha"></textarea>
-            <input type="text" id="inp-dinner-obs" class="meal-obs" placeholder="observação (opcional)...">
-          </div>
-          <div style="border-top:0.5px solid var(--border)" class="textarea-block">
-            <label>Ceia</label>
-            <textarea id="inp-ceia" rows="2" placeholder="ex: iogurte grego, castanhas"></textarea>
-            <input type="text" id="inp-ceia-obs" class="meal-obs" placeholder="observação (opcional)...">
-          </div>
+        <div class="meal-block">
+          <label>Café da manhã</label>
+          <textarea class="input" id="inp-breakfast" rows="2" placeholder="ex: 3 ovos mexidos, pão francês, Monster Zero"></textarea>
+          <input class="input meal-obs" type="text" id="inp-breakfast-obs" placeholder="observação (opcional)...">
+        </div>
+        <div class="meal-block">
+          <label>Almoço</label>
+          <textarea class="input" id="inp-lunch" rows="2" placeholder="ex: marmita light, frango, legumes"></textarea>
+          <input class="input meal-obs" type="text" id="inp-lunch-obs" placeholder="observação (opcional)...">
+        </div>
+        <div class="meal-block">
+          <label>Pré-treino</label>
+          <textarea class="input" id="inp-pretreino" rows="2" placeholder="ex: banana, whey, café"></textarea>
+          <input class="input meal-obs" type="text" id="inp-pretreino-obs" placeholder="observação (opcional)...">
+        </div>
+        <div class="meal-block">
+          <label>Jantar</label>
+          <textarea class="input" id="inp-dinner" rows="2" placeholder="ex: 150g patinho, brócolis, mandioquinha"></textarea>
+          <input class="input meal-obs" type="text" id="inp-dinner-obs" placeholder="observação (opcional)...">
+        </div>
+        <div class="meal-block">
+          <label>Ceia</label>
+          <textarea class="input" id="inp-ceia" rows="2" placeholder="ex: iogurte grego, castanhas"></textarea>
+          <input class="input meal-obs" type="text" id="inp-ceia-obs" placeholder="observação (opcional)...">
         </div>
       </div>
 
       <div class="section">
         <div class="section-title">Suplementação</div>
-        <div class="card">
-          <div class="chips" id="supps-chips"></div>
-        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="supps-chips"></div>
       </div>
 
       <div class="section">
         <div class="section-title">Observações</div>
-        <div class="card">
-          <div class="textarea-block"><textarea id="inp-notes" rows="3" placeholder="qualquer coisa relevante do dia..."></textarea></div>
-        </div>
+        <textarea class="input" id="inp-notes" rows="3" placeholder="qualquer coisa relevante do dia..."></textarea>
       </div>
+
     </div>
 
     <!-- TAB: HISTÓRICO -->
     <div class="tab" id="tab-history">
       <div class="metrics-grid" id="metrics-grid"></div>
+      <div class="section-title">Dias anteriores</div>
       <div id="history-list"></div>
     </div>
 
   </div>
-
-  <nav id="bottom-nav">
-    <button class="nav-item active" onclick="showTab('input',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Registro
-    </button>
-    <button class="nav-item" onclick="showTab('history',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      Histórico
-    </button>
-  </nav>
 </div>
 
 <script>
@@ -231,7 +179,6 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxk-0-iyYx8nzHU
 
 // ── ESTADO ──
 const SUPPS = ['Whey','Creatina','ZMA','L-carnitina','Beta-alanina','Colágeno','Multivitamínico','Vitamina D3 50.000 UI'];
-const EX_TYPES = ['Boxe','Corrida','Musculação','Funcional','Yoga','Outro'];
 const MUSCLES = ['Bíceps','Tríceps','Costas','Peito','Abdômen','Perna','Ombro'];
 let state = { exercises: [], supps: {} };
 const suppChipEls = {};
@@ -255,7 +202,8 @@ function todayISO() {
 
 function updateHeaderDate() {
   const d = new Date();
-  document.getElementById('header-date').textContent = d.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+  const label = d.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('header-date').textContent = label.charAt(0).toUpperCase() + label.slice(1);
 }
 
 // Aceita vírgula ou ponto como separador decimal (comum em teclado numérico
@@ -270,15 +218,16 @@ function buildSupps() {
   SUPPS.forEach(s => {
     state.supps[s] = false;
     const el = document.createElement('button');
-    el.className = 'chip';
+    el.type = 'button';
+    el.className = 'tag tag-neutral supp-btn';
     if (s === 'Vitamina D3 50.000 UI') {
-      el.innerHTML = `Vitamina D3 50.000 UI<span class="badge-weekly">(semanal)</span>`;
+      el.innerHTML = `Vitamina D3 50.000 UI<span style="opacity:.65;margin-left:4px">(semanal)</span>`;
     } else {
       el.textContent = s;
     }
     el.onclick = () => {
       state.supps[s] = !state.supps[s];
-      el.classList.toggle('on', state.supps[s]);
+      el.className = (state.supps[s] ? 'tag tag-accent' : 'tag tag-neutral') + ' supp-btn';
       saveNow('supps', { supps: Object.keys(state.supps).filter(k => state.supps[k]).join(', ') }, el);
       updateStatusCard();
     };
@@ -306,17 +255,22 @@ function toggleMuscle(i, muscle, checked, el) {
 }
 
 // ── EXERCISES ──
+// Tipo é texto livre (com sugestões via <datalist>) — a detecção de
+// "é corrida"/"é musculação" é por substring case-insensitive, não match
+// exato, pra aceitar variações de digitação e manter compatibilidade com
+// dados antigos salvos com os nomes fixos de antes.
 function serializeExercises() {
   return state.exercises.map(e => {
-    if (e.type === 'Corrida') {
+    const type = e.type || '';
+    if (/corr/i.test(type)) {
       const pace = calcPace(e.km, e.runMin);
       const parts = [e.runMin ? e.runMin+'min' : '', e.km ? e.km+'km' : '', pace ? 'Pace: '+pace : ''].filter(Boolean);
-      return `Corrida(${parts.join(' - ')})`;
+      return `${type}(${parts.join(' - ')})`;
     }
-    if (e.type === 'Musculação') {
-      return e.muscles.length ? `Musculação - ${e.muscles.join(', ')}` : 'Musculação';
+    if (/muscul/i.test(type)) {
+      return e.muscles.length ? `${type} - ${e.muscles.join(', ')}` : type;
     }
-    return `${e.type}(${e.duration}min${e.detail?' - '+e.detail:''})`;
+    return `${type}(${e.duration}min${e.detail?' - '+e.detail:''})`;
   }).join(' | ');
 }
 // Salva a versão legível (exercises) e a estruturada (exercises_json) juntas
@@ -326,7 +280,7 @@ function saveExercises(el) {
   saveNow('exercises', { exercises: serializeExercises(), exercises_json: JSON.stringify(state.exercises) }, el);
 }
 function addExercise() {
-  state.exercises.push({ type: 'Boxe', duration: '', detail: '', km: '', runMin: '', muscles: [] });
+  state.exercises.push({ type: '', duration: '', detail: '', km: '', runMin: '', muscles: [] });
   renderExercises();
   saveExercises(document.getElementById('exercise-list'));
 }
@@ -340,29 +294,31 @@ function renderExercises() {
   c.innerHTML = '';
   state.exercises.forEach((ex, i) => {
     const div = document.createElement('div');
-    div.className = 'exercise-item';
+    div.className = 'exercise-item card elev-sm';
+    const type = ex.type || '';
+    const isRunning = /corr/i.test(type);
+    const isMuscle = /muscul/i.test(type);
 
     let html = `
       <div class="exercise-header">
-        <select class="exercise-type-select" onchange="state.exercises[${i}].type=this.value;renderExercises();saveExercises(document.getElementById('exercise-list'));">
-          ${EX_TYPES.map(t => `<option${t===ex.type?' selected':''}>${t}</option>`).join('')}
-        </select>
-        <button class="remove-btn" onclick="removeExercise(${i})">×</button>
+        <input class="input" type="text" list="ex-types-list" placeholder="tipo de exercício (ex: Corrida, Musculação...)" value="${type}"
+          onchange="state.exercises[${i}].type=this.value;renderExercises();saveExercises(document.getElementById('exercise-list'));" style="flex:1">
+        <button class="remove-btn" aria-label="Remover exercício" onclick="removeExercise(${i})">×</button>
       </div>`;
 
-    if (ex.type === 'Corrida') {
+    if (isRunning) {
       const pace = calcPace(ex.km, ex.runMin);
       html += `
         <div class="exercise-fields">
-          <input type="text" inputmode="decimal" placeholder="km" value="${ex.km}"
+          <input class="input" type="text" inputmode="decimal" placeholder="km" value="${ex.km}"
             onchange="state.exercises[${i}].km=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveExercises(this);"
-            style="flex:0 0 80px">
-          <input type="text" inputmode="decimal" placeholder="min" value="${ex.runMin}"
+            style="width:84px">
+          <input class="input" type="text" inputmode="decimal" placeholder="min" value="${ex.runMin}"
             onchange="state.exercises[${i}].runMin=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveExercises(this);"
-            style="flex:0 0 80px">
+            style="width:84px">
           <span class="pace-display">${pace ? 'Pace: '+pace+'/km' : ''}</span>
         </div>`;
-    } else if (ex.type === 'Musculação') {
+    } else if (isMuscle) {
       const checkboxes = MUSCLES.map(m => `
         <label class="muscle-label">
           <input type="checkbox" value="${m}" ${ex.muscles.includes(m)?'checked':''}
@@ -373,10 +329,10 @@ function renderExercises() {
     } else {
       html += `
         <div class="exercise-fields">
-          <input type="text" inputmode="decimal" placeholder="minutos" value="${ex.duration}"
-            onchange="state.exercises[${i}].duration=normDec(this.value); saveExercises(this);" style="flex:0 0 90px">
-          <input type="text" placeholder="detalhes (ex: 6 rounds)" value="${ex.detail}"
-            onchange="state.exercises[${i}].detail=this.value; saveExercises(this);">
+          <input class="input" type="text" inputmode="decimal" placeholder="minutos" value="${ex.duration}"
+            onchange="state.exercises[${i}].duration=normDec(this.value); saveExercises(this);" style="width:100px">
+          <input class="input" type="text" placeholder="detalhes (opcional)" value="${ex.detail}"
+            onchange="state.exercises[${i}].detail=this.value; saveExercises(this);" style="flex:1">
         </div>`;
     }
 
@@ -414,19 +370,18 @@ function mealsSnapshot() {
 // ── NAVIGATION ──
 function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   if (btn) btn.classList.add('active');
-  const titles = { input:'Registro do dia', history:'Histórico' };
-  document.getElementById('header-title').textContent = titles[name];
+  document.getElementById('status-row').style.display = name === 'input' ? 'flex' : 'none';
   if (name === 'history') loadHistory();
 }
 
 // ── SALVAMENTO AO VIVO ──
 // Cada campo dispara seu próprio upsert parcial no Apps Script (só o
 // campo alterado, nunca o formulário inteiro). Campos de digitação livre
-// usam debounce curto; controles de clique (chips/checkbox/select) salvam
-// na hora, já que o evento em si já marca "parei de mexer".
+// usam debounce curto; controles de clique (chips/checkbox/datalist input)
+// salvam na hora, já que o evento em si já marca "parei de mexer".
 const pendingTimers = {};
 
 // timerKey só serve pra coalescer/cancelar debounces concorrentes do mesmo
@@ -520,22 +475,21 @@ function wireLiveSave() {
 function updateStatusCard() {
   const val = id => (document.getElementById(id).value || '').trim();
   const weightFilled = document.getElementById('inp-weight').disabled || !!val('inp-weight');
+  const alimentacao = ['inp-breakfast','inp-lunch','inp-pretreino','inp-dinner','inp-ceia'].some(id => val(id));
   const items = [
     ['Sono', !!val('inp-sleep')],
     ['Água', !!val('inp-water')],
     ['Peso', weightFilled],
     ['Gordura', !!val('inp-gordura')],
-    ['Exercício', state.exercises.length > 0],
-    ['Café', !!val('inp-breakfast')],
-    ['Almoço', !!val('inp-lunch')],
-    ['Pré-treino', !!val('inp-pretreino')],
-    ['Jantar', !!val('inp-dinner')],
-    ['Ceia', !!val('inp-ceia')],
+    ['Treino', state.exercises.some(e => e.type && e.type.trim())],
+    ['Alimentação', alimentacao],
     ['Suplementos', Object.values(state.supps).some(Boolean)],
-    ['Notas', !!val('inp-notes')],
+    ['Observações', !!val('inp-notes')],
   ];
+  const doneCount = items.filter(([, done]) => done).length;
+  document.getElementById('status-summary').textContent = `${doneCount}/${items.length} preenchidos hoje`;
   document.getElementById('status-chips').innerHTML = items.map(([label, done]) =>
-    `<span class="chip${done ? ' on' : ''}">${done ? '✓ ' : ''}${label}</span>`
+    `<span class="tag ${done ? 'tag-accent' : 'tag-neutral'}">${label}</span>`
   ).join('');
 }
 
@@ -578,7 +532,7 @@ async function loadToday() {
       suppsStr.split(',').map(s => s.trim()).filter(Boolean).forEach(name => {
         if (Object.prototype.hasOwnProperty.call(state.supps, name)) {
           state.supps[name] = true;
-          suppChipEls[name].classList.add('on');
+          suppChipEls[name].className = 'tag tag-accent supp-btn';
         }
       });
     }
@@ -626,7 +580,9 @@ async function loadHistory() {
   try {
     const res = await fetch(APPS_SCRIPT_URL);
     const data = await res.json();
-    const rows = (data.values || []).slice(1).reverse(); // pula header, mais recente primeiro
+    // pula header e linhas sem data (célula A vazia — sobra de algum teste
+    // ou edição manual na planilha), mais recente primeiro
+    const rows = (data.values || []).slice(1).filter(r => dateLabel(r[0])).reverse();
 
     if (rows.length === 0) {
       grid.innerHTML = '';
@@ -636,32 +592,33 @@ async function loadHistory() {
 
     // Métricas
     const nums = (col) => rows.map(r => parseFloat(r[col])).filter(x => !isNaN(x));
-    const avg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '-';
+    const avg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
     const exCount = rows.filter(r => r[7] && String(r[7]).trim()).length;
 
     grid.innerHTML = `
-      <div class="metric-card"><div class="metric-val">${avg(nums(1))}</div><div class="metric-lbl">sono médio (h)</div></div>
-      <div class="metric-card"><div class="metric-val">${avg(nums(2))}</div><div class="metric-lbl">água média (L)</div></div>
-      <div class="metric-card"><div class="metric-val">${avg(nums(3))}</div><div class="metric-lbl">peso médio (kg)</div></div>
-      <div class="metric-card"><div class="metric-val">${exCount}</div><div class="metric-lbl">dias com treino</div></div>`;
+      <div><div class="metric-val">${avg(nums(1))}</div><div class="metric-lbl">sono médio (h)</div></div>
+      <div><div class="metric-val">${avg(nums(2))}</div><div class="metric-lbl">água média (L)</div></div>
+      <div><div class="metric-val">${avg(nums(3))}</div><div class="metric-lbl">peso médio (kg)</div></div>
+      <div><div class="metric-val">${exCount}</div><div class="metric-lbl">dias com treino</div></div>`;
 
     list.innerHTML = '';
     rows.slice(0,30).forEach(r => {
       const div = document.createElement('div');
-      div.className = 'day-card';
+      div.className = 'card elev-sm';
+      div.style.marginBottom = '10px';
       div.innerHTML = `
-        <div class="day-card-date">${dateLabel(r[0])}</div>
-        <div class="day-card-grid">
-          ${r[1] ? `<div class="day-stat">Sono <span>${r[1]}h</span></div>` : ''}
-          ${r[2] ? `<div class="day-stat">Água <span>${r[2]}L</span></div>` : ''}
-          ${r[3] ? `<div class="day-stat">Peso <span>${r[3]}kg</span></div>` : ''}
-          ${r[17] ? `<div class="day-stat">Gordura <span>${r[17]}%</span></div>` : ''}
+        <div class="card-title">${dateLabel(r[0])}</div>
+        <div class="day-card-stats">
+          ${r[1] ? `<span>Sono <strong>${r[1]}h</strong></span>` : ''}
+          ${r[2] ? `<span>Água <strong>${r[2]}L</strong></span>` : ''}
+          ${r[3] ? `<span>Peso <strong>${r[3]}kg</strong></span>` : ''}
+          ${r[17] ? `<span>Gordura <strong>${r[17]}%</strong></span>` : ''}
         </div>
-        ${r[7] ? `<div style="font-size:12px;color:var(--text2);margin-top:6px">🏃 ${r[7]}</div>` : ''}
-        <div class="badges-row">
-          ${r[12] ? `<span class="badge badge-blue">${String(r[12]).split(',').length} supls</span>` : ''}
+        ${r[7] ? `<div style="font-size:12px;color:var(--color-neutral-700)">${r[7]}</div>` : ''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${r[12] ? `<span class="tag tag-accent">${String(r[12]).split(',').length} supls</span>` : ''}
         </div>
-        ${r[15] ? `<div style="font-size:12px;color:var(--text2);margin-top:6px;font-style:italic">${r[15]}</div>` : ''}`;
+        ${r[15] ? `<p class="card-body" style="font-style:italic">${r[15]}</p>` : ''}`;
       list.appendChild(div);
     });
   } catch(e) {
@@ -676,16 +633,13 @@ function toggleNoWeight() {
   const noWeight = inp.disabled;
   if (noWeight) {
     inp.disabled = false;
-    inp.value = '';
     inp.placeholder = '86.0';
-    btn.style.borderColor = '';
-    btn.style.color = '';
+    btn.textContent = 'não me pesei hoje';
   } else {
     inp.disabled = true;
     inp.value = '';
     inp.placeholder = 'não pesado';
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.color = 'var(--accent)';
+    btn.textContent = 'registrar peso';
     saveNow('weight', { weight: '' }, btn);
   }
   updateStatusCard();
