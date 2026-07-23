@@ -30,10 +30,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Build — injeta secrets no HTML
-        env:
-          SA_KEY_JSON: ${{ secrets.SA_KEY_JSON }}
-          SHEET_ID: ${{ secrets.SHEET_ID }}
+      - name: Build
         run: node build.js
 
       - name: Setup Pages
