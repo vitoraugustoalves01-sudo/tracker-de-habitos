@@ -17,15 +17,18 @@
 
 const SHEET_NAME = 'entries';
 
-// Ordem das colunas A..T na planilha — não reordenar (compatibilidade
+// Ordem das colunas A..V na planilha — não reordenar (compatibilidade
 // com linhas históricas). Colunas "aposentadas" (energy/mood/work,
 // reading_min/reading_title, fds) continuam existindo na planilha mas
 // nada mais escreve nelas.
+// exercises_json/meals_json guardam o mesmo dado de exercises/breakfast/
+// etc. em formato estruturado (JSON), pro app reconstruir o estado da UI
+// ao recarregar a página sem precisar parsear a string legível de volta.
 const COLUMNS = [
   'date', 'sleep', 'water', 'weight', 'energy', 'mood', 'work',
   'exercises', 'breakfast', 'lunch', 'dinner', 'ceia', 'supps',
   'reading_min', 'reading_title', 'notes', 'created_at', 'gordura',
-  'fds', 'pretreino'
+  'fds', 'pretreino', 'exercises_json', 'meals_json'
 ];
 
 function getSheet_() {

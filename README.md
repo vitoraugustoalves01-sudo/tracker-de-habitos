@@ -12,11 +12,13 @@ PWA de registro diário de hábitos com persistência no Google Sheets.
 ## Setup inicial
 
 ### 1. Planilha
-A planilha deve ter uma aba chamada `entries` com o seguinte cabeçalho na linha 1 (colunas A a T):
+A planilha deve ter uma aba chamada `entries` com o seguinte cabeçalho na linha 1 (colunas A a V):
 
 ```
-date | sleep | water | weight | energy | mood | work | exercises | breakfast | lunch | dinner | ceia | supps | reading_min | reading_title | notes | created_at | gordura | fds | pretreino
+date | sleep | water | weight | energy | mood | work | exercises | breakfast | lunch | dinner | ceia | supps | reading_min | reading_title | notes | created_at | gordura | fds | pretreino | exercises_json | meals_json
 ```
+
+`exercises_json` e `meals_json` guardam o mesmo dado de `exercises`/refeições em formato estruturado (JSON) — é o que o app lê ao carregar a página pra repopular o formulário com o que já foi salvo hoje, sem precisar parsear a string legível (`exercises`, `breakfast` etc.) de volta. Essas colunas não são pra leitura humana na planilha.
 
 ### 2. Apps Script Web App
 Isso substitui a antiga Service Account e só pode ser feito manualmente (exige login na conta Google dona da planilha):

@@ -227,13 +227,14 @@
 // ── CONFIG ──
 // URL do Google Apps Script Web App (doGet/doPost). Não é secreta — é
 // colada manualmente aqui depois do deploy manual do apps-script/Code.gs.
-const APPS_SCRIPT_URL = '__APPS_SCRIPT_URL__';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxk-0-iyYx8nzHUvIs-1dTjk2wROo9k2t7K6XdrDOTx4xVqwnKxXinUy1R-Ustn2B4K/exec';
 
 // ── ESTADO ──
 const SUPPS = ['Whey','Creatina','ZMA','L-carnitina','Beta-alanina','Colágeno','Multivitamínico','Vitamina D3 50.000 UI'];
 const EX_TYPES = ['Boxe','Corrida','Musculação','Funcional','Yoga','Outro'];
 const MUSCLES = ['Bíceps','Tríceps','Costas','Peito','Abdômen','Perna','Ombro'];
 let state = { exercises: [], supps: {} };
+const suppChipEls = {};
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
@@ -241,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateHeaderDate();
   wireLiveSave();
   updateStatusCard();
+  loadToday();
 });
 
 function todayISO() {
@@ -277,9 +279,10 @@ function buildSupps() {
     el.onclick = () => {
       state.supps[s] = !state.supps[s];
       el.classList.toggle('on', state.supps[s]);
-      saveNow('supps', Object.keys(state.supps).filter(k => state.supps[k]).join(', '), el);
+      saveNow('supps', { supps: Object.keys(state.supps).filter(k => state.supps[k]).join(', ') }, el);
       updateStatusCard();
     };
+    suppChipEls[s] = el;
     c.appendChild(el);
   });
 }
@@ -299,7 +302,7 @@ function toggleMuscle(i, muscle, checked, el) {
   const arr = state.exercises[i].muscles;
   if (checked && !arr.includes(muscle)) arr.push(muscle);
   if (!checked) state.exercises[i].muscles = arr.filter(m => m !== muscle);
-  saveNow('exercises', serializeExercises(), el);
+  saveExercises(el);
 }
 
 // ── EXERCISES ──
@@ -316,15 +319,21 @@ function serializeExercises() {
     return `${e.type}(${e.duration}min${e.detail?' - '+e.detail:''})`;
   }).join(' | ');
 }
+// Salva a versão legível (exercises) e a estruturada (exercises_json) juntas
+// — a JSON é o que permite reconstruir a UI ao recarregar a página, sem
+// precisar parsear a string formatada de volta.
+function saveExercises(el) {
+  saveNow('exercises', { exercises: serializeExercises(), exercises_json: JSON.stringify(state.exercises) }, el);
+}
 function addExercise() {
   state.exercises.push({ type: 'Boxe', duration: '', detail: '', km: '', runMin: '', muscles: [] });
   renderExercises();
-  saveNow('exercises', serializeExercises(), document.getElementById('exercise-list'));
+  saveExercises(document.getElementById('exercise-list'));
 }
 function removeExercise(i) {
   state.exercises.splice(i, 1);
   renderExercises();
-  saveNow('exercises', serializeExercises(), document.getElementById('exercise-list'));
+  saveExercises(document.getElementById('exercise-list'));
 }
 function renderExercises() {
   const c = document.getElementById('exercise-list');
@@ -335,7 +344,7 @@ function renderExercises() {
 
     let html = `
       <div class="exercise-header">
-        <select class="exercise-type-select" onchange="state.exercises[${i}].type=this.value;renderExercises();saveNow('exercises',serializeExercises(),document.getElementById('exercise-list'));">
+        <select class="exercise-type-select" onchange="state.exercises[${i}].type=this.value;renderExercises();saveExercises(document.getElementById('exercise-list'));">
           ${EX_TYPES.map(t => `<option${t===ex.type?' selected':''}>${t}</option>`).join('')}
         </select>
         <button class="remove-btn" onclick="removeExercise(${i})">×</button>
@@ -346,10 +355,10 @@ function renderExercises() {
       html += `
         <div class="exercise-fields">
           <input type="text" inputmode="decimal" placeholder="km" value="${ex.km}"
-            onchange="state.exercises[${i}].km=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveNow('exercises',serializeExercises(),this);"
+            onchange="state.exercises[${i}].km=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveExercises(this);"
             style="flex:0 0 80px">
           <input type="text" inputmode="decimal" placeholder="min" value="${ex.runMin}"
-            onchange="state.exercises[${i}].runMin=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveNow('exercises',serializeExercises(),this);"
+            onchange="state.exercises[${i}].runMin=normDec(this.value); const p=calcPace(state.exercises[${i}].km,state.exercises[${i}].runMin); this.closest('.exercise-item').querySelector('.pace-display').textContent=p?'Pace: '+p+'/km':''; saveExercises(this);"
             style="flex:0 0 80px">
           <span class="pace-display">${pace ? 'Pace: '+pace+'/km' : ''}</span>
         </div>`;
@@ -365,9 +374,9 @@ function renderExercises() {
       html += `
         <div class="exercise-fields">
           <input type="text" inputmode="decimal" placeholder="minutos" value="${ex.duration}"
-            onchange="state.exercises[${i}].duration=normDec(this.value); saveNow('exercises',serializeExercises(),this);" style="flex:0 0 90px">
+            onchange="state.exercises[${i}].duration=normDec(this.value); saveExercises(this);" style="flex:0 0 90px">
           <input type="text" placeholder="detalhes (ex: 6 rounds)" value="${ex.detail}"
-            onchange="state.exercises[${i}].detail=this.value; saveNow('exercises',serializeExercises(),this);">
+            onchange="state.exercises[${i}].detail=this.value; saveExercises(this);">
         </div>`;
     }
 
@@ -383,6 +392,23 @@ function mealVal(mealId, obsId) {
   const obs  = document.getElementById(obsId).value.trim();
   if (!meal) return '';
   return obs ? `${meal} (${obs})` : meal;
+}
+
+// Estado estruturado de todas as refeições, salvo em meals_json a cada
+// alteração de qualquer uma delas — permite recarregar meal/obs separados
+// sem parsear a string formatada "refeição (observação)" de volta.
+function mealsSnapshot() {
+  const pick = (mealId, obsId) => ({
+    meal: document.getElementById(mealId).value,
+    obs: document.getElementById(obsId).value
+  });
+  return {
+    breakfast: pick('inp-breakfast', 'inp-breakfast-obs'),
+    lunch: pick('inp-lunch', 'inp-lunch-obs'),
+    pretreino: pick('inp-pretreino', 'inp-pretreino-obs'),
+    dinner: pick('inp-dinner', 'inp-dinner-obs'),
+    ceia: pick('inp-ceia', 'inp-ceia-obs'),
+  };
 }
 
 // ── NAVIGATION ──
@@ -403,14 +429,17 @@ function showTab(name, btn) {
 // na hora, já que o evento em si já marca "parei de mexer".
 const pendingTimers = {};
 
-function scheduleSave(key, getValue, el) {
-  clearTimeout(pendingTimers[key]);
-  pendingTimers[key] = setTimeout(() => doSave({ [key]: getValue() }, el), 800);
+// timerKey só serve pra coalescer/cancelar debounces concorrentes do mesmo
+// campo — os fields de fato enviados vêm inteiros de getFields()/fields
+// (pode ser mais de uma coluna por chamada, ex: exercises + exercises_json).
+function scheduleSave(timerKey, getFields, el) {
+  clearTimeout(pendingTimers[timerKey]);
+  pendingTimers[timerKey] = setTimeout(() => doSave(getFields(), el), 800);
 }
 
-function saveNow(key, value, el) {
-  clearTimeout(pendingTimers[key]);
-  doSave({ [key]: value }, el);
+function saveNow(timerKey, fields, el) {
+  clearTimeout(pendingTimers[timerKey]);
+  doSave(fields, el);
 }
 
 async function doSave(fields, el) {
@@ -455,8 +484,9 @@ function wireLiveSave() {
   const decimalKeys = { 'inp-sleep':'sleep', 'inp-water':'water', 'inp-weight':'weight', 'inp-gordura':'gordura' };
   Object.keys(decimalKeys).forEach(id => {
     const el = document.getElementById(id);
+    const key = decimalKeys[id];
     el.addEventListener('input', () => {
-      scheduleSave(decimalKeys[id], () => normDec(el.value), el);
+      scheduleSave(key, () => ({ [key]: normDec(el.value) }), el);
       updateStatusCard();
     });
   });
@@ -472,7 +502,7 @@ function wireLiveSave() {
     const mealEl = document.getElementById(mealId);
     const obsEl = document.getElementById(obsId);
     const handler = (el) => {
-      scheduleSave(key, () => mealVal(mealId, obsId), el);
+      scheduleSave(key, () => ({ [key]: mealVal(mealId, obsId), meals_json: JSON.stringify(mealsSnapshot()) }), el);
       updateStatusCard();
     };
     mealEl.addEventListener('input', () => handler(mealEl));
@@ -481,7 +511,7 @@ function wireLiveSave() {
 
   const notesEl = document.getElementById('inp-notes');
   notesEl.addEventListener('input', () => {
-    scheduleSave('notes', () => notesEl.value, notesEl);
+    scheduleSave('notes', () => ({ notes: notesEl.value }), notesEl);
     updateStatusCard();
   });
 }
@@ -514,6 +544,78 @@ function dateLabel(v) {
   if (!v) return '';
   const s = String(v);
   return s.includes('T') ? s.split('T')[0] : s;
+}
+
+// ── LOAD DO DIA (persistência entre sessões/dispositivos) ──
+// Repopula o formulário com o que já foi salvo hoje, pra abrir de novo
+// mais tarde (ou em outro dispositivo) mostrar o que já foi preenchido
+// em vez de tudo em branco.
+async function loadToday() {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL);
+    const data = await res.json();
+    const rows = (data.values || []).slice(1); // pula header
+    const today = todayISO();
+    const row = rows.find(r => dateLabel(r[0]) === today);
+    if (!row) return;
+
+    const setVal = (id, v) => {
+      if (v !== undefined && v !== null && v !== '') document.getElementById(id).value = v;
+    };
+    setVal('inp-sleep', row[1]);
+    setVal('inp-water', row[2]);
+    // Peso: se a célula vier vazia (linha já existe mas ainda não pesou,
+    // ou marcou "não me pesei"), não reativa o toggle automaticamente —
+    // deixa o campo em branco e preenchível normalmente, pra evitar
+    // presumir "não me pesei" quando na verdade é só "ainda não preencheu".
+    setVal('inp-weight', row[3]);
+    setVal('inp-gordura', row[17]);
+    setVal('inp-notes', row[15]);
+
+    // Suplementos
+    const suppsStr = row[12] || '';
+    if (suppsStr) {
+      suppsStr.split(',').map(s => s.trim()).filter(Boolean).forEach(name => {
+        if (Object.prototype.hasOwnProperty.call(state.supps, name)) {
+          state.supps[name] = true;
+          suppChipEls[name].classList.add('on');
+        }
+      });
+    }
+
+    // Exercícios — via coluna estruturada (exercises_json), não parseando
+    // a string legível de volta.
+    const exJson = row[20];
+    if (exJson) {
+      try {
+        state.exercises = JSON.parse(exJson);
+        renderExercises();
+      } catch (e) { /* JSON inválido/antigo — ignora, mantém form vazio */ }
+    }
+
+    // Refeições — idem, via meals_json.
+    const mealsJson = row[21];
+    if (mealsJson) {
+      try {
+        const meals = JSON.parse(mealsJson);
+        const applyMeal = (mealId, obsId, m) => {
+          if (!m) return;
+          document.getElementById(mealId).value = m.meal || '';
+          document.getElementById(obsId).value = m.obs || '';
+        };
+        applyMeal('inp-breakfast', 'inp-breakfast-obs', meals.breakfast);
+        applyMeal('inp-lunch', 'inp-lunch-obs', meals.lunch);
+        applyMeal('inp-pretreino', 'inp-pretreino-obs', meals.pretreino);
+        applyMeal('inp-dinner', 'inp-dinner-obs', meals.dinner);
+        applyMeal('inp-ceia', 'inp-ceia-obs', meals.ceia);
+      } catch (e) { /* JSON inválido/antigo — ignora */ }
+    }
+
+    updateStatusCard();
+  } catch (e) {
+    // Falha de rede/etc — formulário só começa vazio, como antes. Nenhum
+    // dado é perdido (o upsert no backend continua correto).
+  }
 }
 
 async function loadHistory() {
@@ -584,7 +686,7 @@ function toggleNoWeight() {
     inp.placeholder = 'não pesado';
     btn.style.borderColor = 'var(--accent)';
     btn.style.color = 'var(--accent)';
-    saveNow('weight', '', btn);
+    saveNow('weight', { weight: '' }, btn);
   }
   updateStatusCard();
 }
